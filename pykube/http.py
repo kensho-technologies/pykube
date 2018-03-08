@@ -22,6 +22,7 @@ from six.moves import http_client
 from six.moves.urllib.parse import urlparse
 
 from .exceptions import HTTPError
+from .oidc import handle_oidc
 from .utils import jsonpath_installed, jsonpath_parse
 
 
@@ -104,7 +105,9 @@ class KubernetesHTTPAdapterSendMixin(object):
                         auth_config.get("expiry"),
                         config,
                     )
-            # @@@ support oidc
+            elif auth_provider.get("name") == "oidc":
+                auth_config = auth_provider.get("config")
+                handle_oidc(request, config, auth_provider)
         elif "client-certificate" in config.user:
             kwargs["cert"] = (
                 config.user["client-certificate"].filename(),
