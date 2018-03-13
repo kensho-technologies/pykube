@@ -9,7 +9,7 @@ import time
 
 
 # If our token is about to expire we should refresh in anticipation
-expiry_buffer = 10
+EXPIRY_BUFFER_SECONDS = 10
 
 
 def _pad_b64(b64):
@@ -31,12 +31,16 @@ def _id_token_expired(id_token):
     payload_json = json.loads(payload)
     expiry = payload_json['exp']
     now = int(time.time())
-    return (now + expiry_buffer) > expiry
+    return (now + EXPIRY_BUFFER_SECONDS) > expiry
 
 
 def _token_endpoint(auth_config):
     """Get the token endpoint from the well known config"""
     idp_issuer_url = auth_config.get('idp-issuer-url')
+
+    if not idp_issuer_url:
+        raise RuntimeError('idp-issuer-url not found in config')
+
     discovery_endpoint = idp_issuer_url + '/.well-known/openid-configuration'
     r = requests.get(discovery_endpoint)
     r.raise_for_status()
@@ -49,10 +53,17 @@ def _refresh_id_token(auth_config):
     refresh_token = auth_config.get('refresh-token')
 
     if not refresh_token:
-        raise RuntimeError('ID token missing or expired and refresh token is missing')
+        raise RuntimeError('id-token missing or expired and refresh-token is missing')
 
     client_id = auth_config.get('client-id')
+    if not client_id:
+        raise RuntimeError('client-id not found in auth config')
+
     client_secret = auth_config.get('client-secret')
+    if not client_secret:
+        raise RuntimeError('client-secret not found in auth config')
+
+
     token_endpoint = _token_endpoint(auth_config)
     data = {
         'grant_type': 'refresh_token',
@@ -76,6 +87,10 @@ def _persist_credentials(config, id_token):
 def _id_token(auth_provider):
     """Return the configured id token if it is not expired, otherwise refresh it"""
     auth_config = auth_provider.get('config')
+
+    if not auth_config:
+        raise RuntimeError('auth-provider config not found')
+
     id_token = auth_config.get('id-token')
     should_persist = False
     if not id_token or _id_token_expired(id_token):
