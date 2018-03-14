@@ -4,7 +4,6 @@ pykube.oidc unittests
 import base64
 import logging
 import json
-import unittest
 
 from . import TestCase
 from pykube import oidc
@@ -51,6 +50,3 @@ class TestOIDC(TestCase):
         id_token_valid = id_token_fmt.format(payload_valid_b64)
         self.assertFalse(oidc._id_token_expired(id_token_valid))
 
-
-if __name__ == '__main__':
-    unittest.main()

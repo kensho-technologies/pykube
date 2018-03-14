@@ -5,6 +5,7 @@ Open ID Connect (OIDC) related code.
 import base64
 import json
 import requests
+import six
 import time
 
 
@@ -27,6 +28,8 @@ def _id_token_expired(id_token):
     if len(parts) != 3:
         raise RuntimeError('ID Token is not valid')
     payload_b64 = _pad_b64(parts[1])
+    if isinstance(payload_b64, six.binary_type):
+        payload_b64 = six.text_type(payload_b64, encoding='utf-8')
     payload = base64.b64decode(payload_b64)
     payload_json = json.loads(payload)
     expiry = payload_json['exp']
